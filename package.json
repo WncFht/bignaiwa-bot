@@ -1,0 +1,22 @@
+{
+  "name": "bignaiwa-bot",
+  "version": "0.2.0",
+  "description": "Physics forward-search bot for 合成大奶娃 (BigNaiWa) — snapshot, simulate, evaluate, argmax",
+  "license": "MIT",
+  "homepage": "https://github.com/wncfht/bignaiwa-bot",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wncfht/bignaiwa-bot.git"
+  },
+  "scripts": {
+    "batch": "node src/run/batch.js",
+    "tune": "node src/run/tune.js",
+    "tune:cem": "node src/run/tune_cem.js",
+    "export": "node src/run/export_data.js",
+    "bundle": "node src/deploy/bundle.mjs",
+    "live": "node src/deploy/live.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  }
+}

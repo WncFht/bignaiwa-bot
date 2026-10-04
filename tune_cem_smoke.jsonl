@@ -1,0 +1,3 @@
+{"gen":-1,"median":1801,"weights":{"score":1,"topSafe":-2,"overTime":-4,"aboveArea":-3,"sameAdj":3,"orderX":1.5,"smallUnder":-2,"bump":-0.8,"maxPair":6,"nMax":1.5,"mergeDist":2,"pendTgt":2,"pendAdj":3,"nextTgt":1,"massTotal":0.3,"cave":-2,"freeTop":1.5,"nAboveSoft":-1.5}}
+{"gen":0,"meds":[1801,2095,1839,1806],"order":[1,2,3,0],"bestScore":2095}
+{"gen":1,"meds":[2095,1761,1781,1787],"order":[0,3,2,1],"bestScore":2095}

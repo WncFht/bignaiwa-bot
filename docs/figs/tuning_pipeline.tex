@@ -1,0 +1,95 @@
+\documentclass[border=8pt]{standalone}
+\usepackage[UTF8,fontset=fandol]{ctex}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,decorations.pathreplacing,fit,matrix,graphs}
+\input{vizstyle}
+\input{vizaudit}
+\begin{document}
+\begin{tikzpicture}
+% ---------- 语义台账 ----------
+% gen: 候选生成（输入 μ, 输出 10 个权重向量）
+% eval: 赛选评估（10 候选 × 8 种子 = 80 局 → 逐候选中位分）
+% next: 换代算子（精英几何均值 → μ', σ×0.92）
+% best: 产物（runningBest → held-out 复测）
+% m1/m2/m3: 单局内每投的决策算子（候选落点/物理模拟/线性评估）
+% laneAbox: 一代（外层迭代 ×6）；laneBbox: 单局（评测单元，80 局并行之一）
+% 语义色：vviolet=生成 vteal=评测 vorange=换代 vgold=产物 vblue=局内决策
+% ---------- 几何台账 ----------
+% 单位 1cm；stage 盒 3.4×1.5 @y=7.0；gm 盒 3.4×1.4 @y=3.05
+% 带回灌线 y=5.5；局内回环 y=1.5；claim y=8.95；mean 顶 y=0.62
+
+\node[vnote, vaudit={}] (claim) at (8.5,8.95)
+  {\small 调权管线：造候选 $\to$ 赛选 $\to$ 换代 $\to$ 产物，$\mu'$ 回灌 $\times$6 代；下排 = 单局决策循环};
+
+% ---------- 带 A：一代 ----------
+\node[vstage, vaudit={inside=laneAbox}] (stA) at (0.35,7.0) {一代};
+\node[model, draw=vviolet, fill=vviolet!14, minimum width=3.4cm, minimum height=1.5cm, align=center,
+      vaudit={class=stage,inside=laneAbox}] (gen) at (3.0,7.0)
+  {造候选\\ {\scriptsize $\mu$ + ln-扰动}\\ {\scriptsize pop10 含保底}};
+\node[model, draw=vteal, fill=vteal!14, minimum width=3.4cm, minimum height=1.5cm, align=center,
+      vaudit={class=stage,inside=laneAbox}] (eval) at (7.4,7.0)
+  {赛选\\ {\scriptsize 10候选 $\times$ 8种子}\\ {\scriptsize =80 局→逐候选中位}};
+\node[model, draw=vorange, fill=vorange!14, minimum width=3.4cm, minimum height=1.5cm, align=center,
+      vaudit={class=stage,inside=laneAbox}] (next) at (11.8,7.0)
+  {换代\\ {\scriptsize top-25\% 精英}\\ {\scriptsize 几何均值→$\mu'$, $\sigma\times$0.92}};
+\node[model, draw=vgold, fill=vgold!20, minimum width=3.0cm, minimum height=1.5cm, align=center,
+      vaudit={inside=laneAbox,aligny=gen}] (best) at (15.4,7.0)
+  {产物\\ {\scriptsize runningBest}\\ {\scriptsize OOS 复测}};
+
+\begin{pgfonlayer}{bg}
+  \node[band, fit=(stA)(gen)(eval)(next)(best), inner sep=8pt, vaudit={}] (laneAbox) {};
+\end{pgfonlayer}
+
+\draw[varr, shorten >=2pt] (gen) -- (eval);
+\vzwire{ge}{gen;eval}{endpoint=gen,eval via=laneAbox}
+\draw[varr, shorten >=2pt] (eval) -- (next);
+\vzwire{en}{eval;next}{endpoint=eval,next via=laneAbox}
+\draw[varr, shorten >=2pt] (next) -- (best);
+\vzwire{nb}{next;best}{endpoint=next,best via=laneAbox}
+
+% ---------- 回灌回路 ----------
+\draw[varr] (best.south) -- (15.4,5.5) -- (3.0,5.5) -- (gen.south);
+\vzwire{fb}{best.south;15.4,5.5;3.0,5.5;gen.south}{endpoint=best,gen via=laneAbox}
+\node[vnote, vaudit={}] (labLoop) at (9.2,5.12)
+  {\scriptsize $\mu'$ 回灌入下一代种群 $\times$6，$\approx$110min/代};
+
+% ---------- 带 B：单局 ----------
+\node[vstage, vaudit={inside=laneBbox}] (stB) at (0.35,3.05) {单局};
+\node[model, draw=vblue, fill=vblue!14, minimum width=3.4cm, minimum height=1.4cm, align=center,
+      vaudit={class=gm,inside=laneBbox}] (m1) at (3.4,3.05)
+  {候选落点\\ {\scriptsize $\sim$20 个}\\ {\scriptsize 网格+同级对齐}};
+\node[model, draw=vblue, fill=vblue!14, minimum width=3.4cm, minimum height=1.4cm, align=center,
+      vaudit={class=gm,inside=laneBbox}] (m2) at (7.2,3.05)
+  {逐候选模拟\\ {\scriptsize drop+settle}\\ {\scriptsize 110f/9calm}};
+\node[model, draw=vblue, fill=vblue!14, minimum width=3.4cm, minimum height=1.4cm, align=center,
+      vaudit={class=gm,inside=laneBbox}] (m3) at (11.0,3.05)
+  {17维 $\times w$ 评分\\ {\scriptsize argmax}\\ {\scriptsize 投放}};
+\node[vnote, align=center, vaudit={inside=laneBbox}] (gnote) at (14.5,3.05)
+  {\scriptsize $\sim$17min/局\\ depth1 调参\\ depth2 部署};
+
+\begin{pgfonlayer}{bg}
+  \node[band, fit=(stB)(m1)(m2)(m3)(gnote), inner sep=8pt, vaudit={}] (laneBbox) {};
+\end{pgfonlayer}
+
+\draw[varr, shorten >=2pt] (m1) -- (m2);
+\vzwire{m12}{m1;m2}{endpoint=m1,m2 via=laneBbox}
+\draw[varr, shorten >=2pt] (m2) -- (m3);
+\vzwire{m23}{m2;m3}{endpoint=m2,m3 via=laneBbox}
+
+% ---------- 局内回环 ----------
+\draw[varr] (m3.south) -- (11.0,1.5) -- (3.4,1.5) -- (m1.south);
+\vzwire{gloop}{m3.south;11.0,1.5;3.4,1.5;m1.south}{endpoint=m3,m1 via=laneBbox}
+\node[vnote, vaudit={adjacent=laneBbox}] (labG) at (7.2,1.23)
+  {\scriptsize $\times$600 投 · 判负且持币 $\to$ 削顶续局};
+
+% ---------- 底部含义框 ----------
+\node[mean, text width=15.6cm, anchor=north, vaudit={}] (meanbox) at (8.5,0.62)
+  {\textbf{对象}：紫=造候选 / 青=赛选 / 橙=换代 / 金=产物 / 蓝=局内决策算子；灰带=阶段带。~~%
+   \textbf{机制}：每代 80 局摊 12 worker $\approx$110min；fitness = 8 种子中位（抗双峰）；$\sigma$ 0.6$\to$0.24 收 6 代。%
+   下一步：候选级 capping（追不上精英线即杀）+ 局内条件杀（E17 验证中）$\to$ 等效预算 $\times$2。};
+\node[vnote, vaudit={adjacent=meanbox}] (cap) at ($(meanbox.south)+(0,-0.32)$)
+  {\scriptsize 合成大奶娃 bot · 调权与决策管线（E16 配置）· 2026-10-04};
+
+\end{tikzpicture}
+\end{document}

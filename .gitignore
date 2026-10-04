@@ -1,0 +1,11 @@
+node_modules/
+dist/
+dist-bot-tmp/
+data/
+recordings/
+tune_results.jsonl
+*.log
+.DS_Store
+.claude/
+*.audit
+*.audit.txt
