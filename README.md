@@ -1,6 +1,6 @@
 # bignaiwa-bot — 合成大奶娃自动对局
 
-> **English**: An autonomous bot for the Suika-like merge game [合成大奶娃 / BigNaiWa](https://yhsome.github.io/BigNaiWa/). Instead of learning an environment model, it *is* the model: every decision snapshots the live game state, simulates ~20 candidate drops through the game's own deterministic physics, scores each settled board with a 17-feature linear evaluator (weights found by CEM black-box optimization), and plays the argmax. On the real leaderboard it scored **25,548** — roughly 3.7× the best recorded human score (6,856) — after 91 minutes and 2,460 drops with 16 revives spent. No training data, no neural network, no RPC: the same code runs offline (seeded sandbox, for tuning) and inside the real page (for deployment).
+> **English**: An autonomous bot for the Suika-like merge game [合成大奶娃 / BigNaiWa](https://yhsome.github.io/BigNaiWa/). Instead of learning an environment model, it *is* the model: every decision snapshots the live game state, simulates ~20 candidate drops through the game's own deterministic physics, scores each settled board with a 17-feature linear evaluator (weights found by CEM black-box optimization), and plays the argmax. On the real leaderboard it scored **25,548** — roughly 3.7× the best recorded human score (6,862) — after 91 minutes and 2,460 drops with 16 revives spent. No training data, no neural network, no RPC: the same code runs offline (seeded sandbox, for tuning) and inside the real page (for deployment).
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -12,14 +12,14 @@
 
 ## 战绩
 
-- **真机上榜**：3 局全部提交排行榜 —— **25,548** / 6,468 / 7,023（2026-10-04，录屏与逐投日志见 `recordings/`，91 分钟全程 20 倍速视频 `game1-25548-20x.mp4`）
-- **对比人类**：榜窗真人集中 1.2k–4k，历史最高 6,856（TinyWebDB 滚动榜实测）→ 本 bot = 榜首 **3.7 倍**
+- **真机上榜**：3 局全部提交排行榜 —— **25,548** / 6,468 / 7,023（2026-10-04，录屏与逐投日志见 `recordings/`，91 分钟全程 20 倍速视频 `game1-25548-20x.mp4`）。榜单为滚动 20 条窗口，随后被第三方刷频提交占满、本 bot 成绩已不可在榜窗复核——第三方佐证以录屏与日志为准
+- **对比人类**：榜窗真人集中 1.2k–4k，历史最高 6,862（TinyWebDB 实拉 n=262 快照，见 `docs/figs/leaderboard_snapshot.json`）→ 本 bot 最佳 = 榜首 **3.7 倍**
 - **离线跑批**：depth1 600 投截断中位 ~6.3k；分布双峰——早夭 <5k vs 入复活币正循环 >14k（E1/E18）
 - **对照基线**：random ~200、启发式 ~1.8k、粗网格搜索 3.8k → 本系统 14.7k（12 局 × 3000 投）
 
 ![bot 与人类分数分布](docs/figs/perf_vs_human.png)
 
-*E1 正式批 12 局不截断成绩：左簇 = 早夭局，右簇 = 进入复活币正循环的马拉松局。压缩左簇（压早夭率）是调优的隐含目标。*
+*262 条真人提交（灰点）挤在 7k 以下；bot 离线 600 投截断（青点）已贴住真人上限；真机三局（金星）两局贴顶、一局 25,548 飞出榜首 3.7 倍。红线为真人最高 6,862。*
 
 ## 怎么做到的（30 秒版）
 

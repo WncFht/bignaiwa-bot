@@ -1,6 +1,6 @@
-# 当前调用方案：决策管线与调参管线
+# 当前调参方案：决策管线与调参管线
 
-本文档描述系统当前实际运行的两条管线：**决策层**（一局怎么打）与**调参层**（权重怎么找），以及并行拓扑与下一步改造。架构原理见 design.md，实验依据见 experiments.md。
+本文档描述系统当前实际运行的两条管线：**决策层**（一局怎么打）与**调参层**（权重怎么找），以及并行拓扑与下一步改造。架构原理见 design.md，实验依据见 experiments.md，决策逐步机制见 algorithm.md。
 
 ## 1. 决策层：一局怎么打
 
@@ -45,18 +45,28 @@
 - **跨机**：`remote_worker.js`（ssh stdio JSON 行协议 + spawnRemote 鸭子类型适配）已实现并验证，**当前停用**——用户指示仅在 arch 跑。
 - **每代重建 worker 池**：任务数 < worker 数时多余 worker 即刻退休（这是正常行为不是 bug）。
 
-## 4. 下一步（二轮文献调研结论，待 E16/E17 收口）
+## 4. 下一步（二轮文献调研结论）
 
 按每墙钟小时期望收益排序：
 
-1. **racing + capping**（预计等效预算 ×2）：同代候选共享种子集逐局喂任务，某候选中位上界数学上追不进 top-μ 即杀（Heidrich-Meisner & Igel ICML'09 的 ES 内赛选是标准参照）；局内 GESP 式条件杀——只杀"判定必死"的局，均匀截断对双峰分布有结构性偏差。
-2. **CEM → 全协方差 CMA-ES**：对角采样升级为协方差自适应，同 10 样本挤出更多权重耦合信息；配 UH-CMA 噪声自适应复评。Tetris 证据只到 CMA≈CEM，增益合理预期但非已证。
-3. **fitness 二值化**：改记"过双峰分界线（≥5000）的种子比例"代替中位——伯努利比例的置信界紧得多，赛选更快。
+1. **racing + capping**（预计等效预算 ×2）：同代候选共享种子集逐局喂任务，某候选中位上界数学上追不进 top-μ 即杀（Heidrich-Meisner & Igel 的 ES 内赛选是标准参照[^hmigel09]；irace/F-race 与 ParamILS capping 同族[^irace16][^paramils09]）；局内 GESP 式条件杀——只杀"判定必死"的局，均匀截断对双峰分布有结构性偏差[^gesp23]。
+2. **CEM → 全协方差 CMA-ES**：对角采样升级为协方差自适应，同 10 样本挤出更多权重耦合信息；配 UH-CMA 噪声自适应复评[^hansen09]。Tetris 证据只到 CMA≈CEM，增益合理预期但非已证。
+3. **fitness 二值化**：改记"过双峰分界线（≥5000）的种子比例"代替中位——伯努利比例的置信界紧得多，赛选更快，且 E17 证实 rv≥3 是比终分早 ~100 投的等价判据（成功局可提前截断省 ~13%）；可叠加 CLOP 做二值化局部回归[^clop]。
 4. **排除**：lmm-CMA 代理模型（建二次模型要 ~171 点吃光预算）、BO（17 维在能力边界 + 双峰异方差）、均匀截断 schedule。
 
 ## 5. 当前在跑（2026-10-04）
 
 | 任务 | 内容 | worker | 预计 |
 |---|---|---|---|
-| E16 `brmyi5skm` | CEM 第二轮：6 代 × pop10 × 8 混合种子 | 12 | ~14h（探针分核） |
-| E17 `b9n1z35w0` | 中间信号探针：10 臂 × 3 种子逐 25 投轨迹 | 3 | ~4h |
+| E16 `brmyi5skm` | CEM 第二轮：6 代 × pop10 × 8 混合种子 | 12 | ~14h |
+
+E17 探针已结案（rv≥3 入循环标记、条件杀规则、猝死地板，见 experiments.md）。
+
+### 参考文献
+
+[^hmigel09]: Heidrich-Meisner, V., Igel, C. Hoeffding and Bernstein Races for Selecting Policies in Evolutionary Direct Policy Search. ICML 2009, pp. 401–408. [doi.org](https://dl.acm.org/doi/10.1145/1553374.1553426)
+[^irace16]: López-Ibáñez, M., Dubois-Lacoste, J., Pérez Cáceres, L., Birattari, M., Stützle, T. The irace Package: Iterated Racing for Automatic Algorithm Configuration. Operations Research Perspectives 3:43–58, 2016. [doi.org](https://doi.org/10.1016/j.orp.2016.09.002)
+[^paramils09]: Hutter, F., Hoos, H. H., Leyton-Brown, K., Stützle, T. ParamILS: An Automatic Algorithm Configuration Framework. JAIR 36:267–306, 2009. [jair.org](https://www.jair.org/index.php/jair/article/view/10628/25415)
+[^gesp23]: Arza, E., Le Goff, L. K., Hart, E. Generalized Early Stopping in Evolutionary Direct Policy Search. arXiv:2308.03574, 2023. [arxiv.org](https://arxiv.org/abs/2308.03574)
+[^hansen09]: Hansen, N., Niederberger, A. S. P., Guzzella, L., Koumoutsakos, P. A Method for Handling Uncertainty in Evolutionary Optimization With an Application to Feedback Control of Combustion. IEEE TEVC 13(1):180–197, 2009. [polytechnique.fr](http://www.cmap.polytechnique.fr/~nikolaus.hansen/TEC2009online.pdf)
+[^clop]: Coulom, R. CLOP: Confident Local Optimization for Noisy Black-Box Parameter Tuning. ACG13, 2011. [remi-coulom.fr](https://www.remi-coulom.fr/CLOP/CLOP.pdf)

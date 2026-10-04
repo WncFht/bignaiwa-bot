@@ -69,7 +69,7 @@ E10 消融显示对齐候选贡献≈0（均匀网格已覆盖），但无害保
 
 ## 4. 权重从哪来：CEM 黑盒调优
 
-评估权重的唯一信号是完整对局终分——不可微、高方差、双峰。方法论裁决（E4b/E9b）：**回归拟合路线证伪**（拟合权重实战崩盘至 1-2k），黑盒分数优化是唯一可行来源，与 Tetris 判例一致。
+评估权重的唯一信号是完整对局终分——不可微、高方差、双峰。方法论裁决（E4b/E9b）：**回归拟合路线证伪**（拟合权重实战崩盘至 1-2k），黑盒分数优化是唯一可行来源，与 Tetris 判例一致[^szita06][^thiery09]。
 
 CEM 调参循环（tune_cem.js，对应 docs/figs/tuning_pipeline 图）：
 
@@ -97,4 +97,11 @@ CEM 调参循环（tune_cem.js，对应 docs/figs/tuning_pipeline 图）：
 
 - **线性评估接近饱和**（E15）：cem 与 hand 两套权重各擅半场，继续同空间微调收益枯竭；下一步增益在结构（更深前瞻、分段门控）或换函数类。
 - **MC 随机 rollout 估值不可用**（E10'）：本作高分靠长局长累积，30 投短 rollout 增量是噪声，与 ret 机械负相关。
-- **端到端 RL 判死刑**：公开文献 5+ 次 DQN 尝试均退化堆角落；学习组件的正确位置在搜索内部（蒸馏候选剪枝、价值替代线性评估——`rl/` 预留未启用）。
+- **端到端 RL 判死刑**：公开文献与独立复现的 DQN 尝试均退化堆角落[^poelsma][^suika-rl]；学习组件的正确位置在搜索内部（蒸馏候选剪枝、价值替代线性评估——`rl/` 预留未启用）。
+
+### 参考文献
+
+[^szita06]: Szita, I., Lörincz, A. Learning Tetris Using the Noisy Cross-Entropy Method. Neural Computation 18(12):2936–2941, 2006. [doi.org](https://doi.org/10.1162/neco.2006.18.12.2936)
+[^thiery09]: Thiery, C., Scherrer, B. Building Controllers for Tetris. ICGA Journal 32(1):3–11, 2009. [doi.org](https://doi.org/10.3233/ICG-2009-32102)
+[^poelsma]: Poelsma, J. Creating an AI that Plays Suika Game. Master’s thesis, LIACS, Leiden University, 2025. [theses.liacs.nl](https://theses.liacs.nl/3516)
+[^suika-rl]: Jacobs, M. SuikaReinforcement: Reinforcement Learning model (DQN) for Suika Game. GitHub. [github.com/MattJacobs30/SuikaReinforcement](https://github.com/MattJacobs30/SuikaReinforcement)
