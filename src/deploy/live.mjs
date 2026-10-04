@@ -70,9 +70,11 @@ async function waitGameOver(page) {
 }
 
 async function newRecordedCtx() {
+  /* screencast 按 CSS 像素录制（deviceScaleFactor 无效），把 .stage 撑到
+     1400px 让 canvas backing 变成 840×1400 才是真的 2x 渲染 */
   const ctx = await browser.newContext({
-    viewport: { width: 900, height: 900 },
-    recordVideo: { dir: REC_DIR, size: { width: 900, height: 900 } }
+    viewport: { width: 1200, height: 1500 },
+    recordVideo: { dir: REC_DIR, size: { width: 1200, height: 1500 } }
   });
   openCtxs.add(ctx);
   ctx.on('close', () => openCtxs.delete(ctx));
@@ -101,6 +103,7 @@ if (RECORD) {
   for (let g = 1; g <= games; g++) {
     const { ctx, page } = await newRecordedCtx();
     await boot(page, 1);
+    await page.addStyleTag({ content: '.stage { height: 1400px !important; }' });
     const score = await waitGameOver(page);
     console.log(`game ${g}: score=${score}`);
     await ctx.close().catch(() => {});
