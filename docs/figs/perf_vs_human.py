@@ -1,9 +1,11 @@
-"""perf_vs_human: 真人提交分布 vs bot 成绩（离线截断 + 真机上榜）。
+"""perf_vs_human: 真人提交分布 vs bot 成绩（离线截断 + 真机实录）。
 
 数据：TinyWebDB 实拉 262 条真人提交（2026-10-04，已剔除 99999999 刷屏）；
-bot 真机 = E18 三局 {25548,6468,7023}；bot 离线 = E17 hand_d2 ×3 种子
+bot 真机 = 9 局 {25548,6468,7023 上榜 + 30871,7825,4609,37634 自然判负 +
+8045 断电截断 + 93499 六小时看门狗截断}；bot 离线 = E17 hand_d2 ×3 种子
 {6194,6460,6603}（600 投截断）。语义：灰点=真人单局 / 青点=离线截断 /
-金星=真机提交；红线=真人最高 6862。
+金星=真机完局 / 空心右三角=真机截断（下界，被进程杀而非判负）；
+红线=真人最高 6862。x 轴对数（得分跨 405–93499 两个数量级）。
 
 运行：uv run --with matplotlib --with numpy python perf_vs_human.py
 依赖 figure-viz skill 的 fvstyle/fvlocate（按 ~/.claude 安装位定位）。
@@ -22,34 +24,41 @@ import matplotlib.pyplot as plt
 fv.apply_rc("paper")
 snap = json.load(open(os.path.join(_HERE, 'leaderboard_snapshot.json')))
 human = [s for _, s in snap['human']]
-live = [25548, 6468, 7023]
+live = [25548, 6468, 7023, 30871, 7825, 4609, 37634]      # 完局（自然判负）
+live_cens = [8045, 93499]                                # 断电 / 6h 看门狗截断 → 下界
 offline = [6194, 6460, 6603]   # E17 hand_d2, 600 投截断
 
 rng = random.Random(7)
 jit = lambda n, a=0.16: [a * (rng.random() * 2 - 1) for _ in range(n)]
 
 fig, ax = plt.subplots(figsize=(8.6, 3.0))
-rows = {'真人提交': 1.0, 'bot·离线截断': 2.0, 'bot·真机上榜': 3.0}
+rows = {'真人提交': 1.0, 'bot·离线截断': 2.0, 'bot·真机': 3.0}
 ax.scatter(human, [rows['真人提交'] + j for j in jit(len(human))],
            s=9, color=fv.HUES['vgray'], alpha=.45, linewidths=0, zorder=2)
 ax.scatter(offline, [rows['bot·离线截断'] + j for j in jit(len(offline))],
            s=42, color=fv.HUES['vteal'], edgecolor='white', linewidths=.6, zorder=4)
-ax.scatter(live, [rows['bot·真机上榜'] + j for j in jit(len(live))],
+ax.scatter(live, [rows['bot·真机'] + j for j in jit(len(live))],
            s=150, color=fv.HUES['vgold'], marker='*', edgecolor=fv.NEUTRALS['vink'],
            linewidths=.5, zorder=5)
+ax.scatter(live_cens, [rows['bot·真机'] + dy for dy in (-0.24, 0.10)],
+           s=110, marker='>', facecolor='none', edgecolor=fv.HUES['vgold'],
+           linewidths=1.4, zorder=5)
 ax.axvline(6862, color=fv.HUES['vcoral'], ls=(0, (4, 3)), lw=1.1, zorder=3)
-ax.annotate('真人最高 6862', (6862, 3.34), ha='right', va='bottom',
+ax.annotate('真人最高 6,862', (6862, 3.34), ha='right', va='bottom',
             fontsize=9.5, color=fv.HUES['vcoral'])
-ax.annotate('25548', (25548, 3.16), ha='center', va='bottom',
+ax.annotate('93,499', (88000, 3.24), ha='right', va='bottom',
             fontsize=10, fontweight='bold', color=fv.NEUTRALS['vink'])
-ax.annotate('n=262', (300, 1.42), fontsize=9, color=fv.HUES['vgray'])
+ax.annotate('n=262', (430, 1.42), fontsize=9, color=fv.HUES['vgray'])
+ax.set_xscale('log')
+ax.set_xlim(350, 160000)
+ax.set_xticks([1000, 10000, 100000], ['1,000', '10,000', '100,000'])
 ax.set_yticks(list(rows.values()), list(rows.keys()), fontsize=9.5)
-ax.set_xlim(0, 27500); ax.set_ylim(0.55, 3.55)
-ax.set_xlabel('单局得分', fontsize=9.5)
+ax.set_ylim(0.55, 3.55)
+ax.set_xlabel('单局得分（对数轴）', fontsize=9.5)
 for s in ('top', 'right', 'left'): ax.spines[s].set_visible(False)
 ax.tick_params(axis='y', length=0); ax.tick_params(axis='x', labelsize=9)
 ax.text(0.995, 0.03,
-        '合成大奶娃 · bot 与真人榜得分分布（TinyWebDB 实拉，剔除刷屏）· 2026-10-04',
+        '合成大奶娃 · bot 与真人榜得分分布 · 真机 9 局（3 上榜 + 6 录屏），▷=进程截断下界 · 2026-10-05',
         transform=ax.transAxes, ha='right', va='bottom',
         fontsize=9, color=fv.HUES['vgray'])
 fig.tight_layout()
